@@ -1,0 +1,6 @@
+"0","#libraries"
+"0","library(pacman)"
+"0","p_load(tidyverse, janitor, here, haven, labelled, sjmisc, skimr,"
+"0","       stargazer, IsingFit, qgraph, Matrix, igraph, NetworkComparisonTest, bootnet,"
+"0","       rio, IsingSampler, compute.es, foreign, mgm, matrixcalc, openxlsx, Rcpp,"
+"0","       forestplot, ggplot2, compute.es, jtools, glue, EGAnet, signnet)"

@@ -1,0 +1,680 @@
+---
+title: '240125'
+author: "Arturo Bertero"
+date: "2024-01-25"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Input
+
+```{r}
+#libraries
+library(pacman)
+p_load(tidyverse, janitor, here, haven, labelled, sjmisc, skimr,
+       stargazer, IsingFit, qgraph, Matrix, igraph, NetworkComparisonTest, bootnet,
+       rio, IsingSampler, compute.es, foreign, mgm, matrixcalc, openxlsx, Rcpp,
+       forestplot, ggplot2, compute.es, jtools, glue, EGAnet, signnet)
+```
+
+```{r}
+#Import dataset
+load(here("Input", "ita_data.RData"))
+```
+
+# Processing
+
+## Create objects
+
+```{r}
+shortnames_22 = names(issp_2019_nodes)
+shortnames_23 = names(issp_2019_anger)
+
+longnames_22 <- c("Perception of large income inequality (ineq_p)",
+            "Perception of tax regressivity (reg_p)",
+            "Belief in progressive taxation (prog_b)",
+            "Judgment of unfair distribution (ineq_j)",
+            "Judgment of political disinterest in redistribution (redis_d)",
+            "Judgment of failure of public redistribution (redis_f)",
+            "Importance of wealthy family (family)",
+            "Importance of parental education (edupar)",
+            "Importance of education (edu)",
+            "Importance of hard work (work)",
+            "Importance of knowing right people (people)",
+            "Importance of political connections (connec)",
+            "Importance of giving bribes (bribes)",
+            "Importance of race (race)",
+            "Importance of religion (relig)",
+            "Importance of sex (sex)",
+            "Belief in public redistribution (redis_p)",
+            "Belief in market redistribution (redis_m)",
+            "Pay criteria: Responsibility (resp)",
+            "Pay criteria: Training (train)",
+            "Pay criteria: Need (need)",
+            "Pay criteria: Merit (merit)")
+
+legendnames_22 <- c("Perception of large income inequality",
+            "Perception of tax regressivity",
+            "Belief in progressive taxation",
+            "Judgment of unfair distribution",
+            "Judgment of political disinterest in redistribution",
+            "Judgment of failure of public redistribution",
+            "Importance of wealthy family",
+            "Importance of parental education",
+            "Importance of education",
+            "Importance of hard work",
+            "Importance of knowing right people",
+            "Importance of political connections",
+            "Importance of giving bribes",
+            "Importance of race",
+            "Importance of religion",
+            "Importance of sex",
+            "Belief in public redistribution",
+            "Belief in market redistribution",
+            "Pay criteria: Responsibility",
+            "Pay criteria: Training",
+            "Pay criteria: Need",
+            "Pay criteria: Merit")
+
+#colors
+ggm_groups = list(
+ "Perceptions"=c(1,2,7:16),
+ "Beliefs"=c(3,17:22),
+ "Judgments"=c(4:6))
+
+ggm_colors <- c("#FBB4AE","#CCEBC5", "#A6D9E0")
+
+#remove haven labels
+issp_2019_nodes = sapply(issp_2019_nodes, haven::zap_labels)
+issp_2019_can = sapply(issp_2019_can, haven::zap_labels)
+issp_2019_anger = sapply(issp_2019_anger, haven::zap_labels)
+```
+
+## Full scale network
+
+```{r}
+#fit mgm
+mgm_issp_2019_nodes = mgm(issp_2019_nodes, type = rep("g",22), 
+              level = rep(1, 22), lambdaSel = "EBIC", ruleReg = "OR")
+
+#predictability
+pred_obj <- predict(object = mgm_issp_2019_nodes, 
+                    data = issp_2019_nodes, 
+                    errorCon = 'R2')
+
+```
+
+```{r}
+#plot
+set.seed(100)
+GraphMGM<-qgraph(mgm_issp_2019_nodes$pairwise$wadj, layout = 'spring',
+            labels = shortnames_22, nodeNames = longnames_22,  
+            groups = ggm_groups, color = ggm_colors, 
+            legend=T, legend.cex = 0.33, 
+            edge.color=mgm_issp_2019_nodes$pairwise$edgecolor_cb,
+            borders = T, vsize=7.0, esize = 15, GLratio = 2,
+            pie = pred_obj$errors[,2], pieColor = rep('#377EB8',22),
+            filetype="jpg", filename=here("Output", "Fig_1"))
+            
+```
+
+### H1: Small world 
+
+```{r}
+# ITA_small_core = qgraph::smallworldness(CANFit$weiadj, B = 1000)
+
+(small_w = NetworkToolbox::smallworldness(mgm_issp_2019_nodes$pairwise$wadj, iter = 1000, 
+          progBar = FALSE, method = c("HG")))
+
+#ASPL
+NetworkToolbox::pathlengths(mgm_issp_2019_nodes$pairwise$wadj, weighted = FALSE)
+
+#Clustering
+NetworkToolbox::transitivity(mgm_issp_2019_nodes$pairwise$wadj, weighted = FALSE)
+```
+
+### H2: Centrality
+
+```{r}
+#centrality
+centrality_mgm_graph = centralityPlot(GraphMGM, labels = longnames_22, 
+                                      orderBy = "Strength", 
+                                      scale = "z-scores") + 
+  geom_vline(xintercept=0, linetype="dotted") +
+  scale_x_continuous(limits = c(-2.5,2.8)) +
+  theme_nice() + 
+  theme(axis.text.y=element_text(hjust=1))
+
+ggsave(here("Output", "Fig_2.jpg"), centrality_mgm_graph,
+        height = 4)
+```
+
+
+## Moderation by anger
+
+```{r}
+#Fit moderated ggm
+mgm_mod <- mgm(data = issp_2019_anger,
+               type = rep("g", 23),
+               level = rep(1, 23),
+               lambdaSel = "CV",
+               ruleReg = "OR",
+               moderators = 23, 
+               threshold = "none", 
+               pbar = FALSE)
+```
+
+
+```{r}
+#Inspect interaction parameters [comments are wrong:readapt]
+mgm_mod$interactions$indicator
+#45 pairwise interactions
+#27 3-way interactions (moderation)
+
+#acces a pairwise interaction between variables 1 (p_ineq) and 3 (p_tax) can be obtained like this:
+showInteraction(object = mgm_mod, int = c(1,3))
+#interpretation like in reg: when increasing p_ineq (p_tax) by 1 unit, p_tax (p_ineq) increases by 
+# 0.019, keeping everything else constant
+
+#access a 3-way interaction
+showInteraction(object = mgm_mod, int = c(1,3,11))
+#interpretation: positive moderation effect. If one increases the values of anger, the pairwise interaction between p_ineq and p_tax becomes stronger.
+#we have to correct our above interpretation of the pairwise interaction between p_ineq and p_tax: when increasing p_ineq (p_tax) by 1 unit, p_tax (p_ineq) increases by ≈0.019, if anger is equal to zero and when keeping everything else constant.
+```
+
+```{r}
+#access scale of anger (every variable is mean-centered and sd=1)
+tb <- table(scale(issp_2019_anger[,23]))
+names(tb) <- round(as.numeric(names(tb)), 2)
+barplot(tb, axes=FALSE, xlab="", ylim=c(0, 250))
+axis(2, las=2, c(0, 50, 100, 150, 200, 250))
+
+```
+
+```{r}
+#conditioning on the moderator, interesting values are 0, 3, 7, 10 of v 11 (anger)
+cond0 <- condition(object = mgm_mod, 
+                   values = list('23' = 0))
+
+cond3 <- condition(object = mgm_mod, 
+                   values = list('23' = 3))
+
+cond7 <- condition(object = mgm_mod, 
+                   values = list('23' = 7))
+
+cond10 <- condition(object = mgm_mod, 
+                   values = list('23' = 10))
+
+#these are now 3 different pairwise models, in which anger is fixed at 3 diff values
+```
+
+```{r}
+#plot with 3 levels and fixed layout
+Graph_cond_0 = qgraph(cond0$pairwise$wadj)
+Graph_cond_3 = qgraph(cond3$pairwise$wadj)
+Graph_cond_7 = qgraph(cond7$pairwise$wadj)
+Graph_cond_10 = qgraph(cond10$pairwise$wadj)
+
+#multiplot
+jpeg(here("Output", "Fig_3.jpg"), 
+    height = 3000, width = 4000, quality = 1000)
+
+L<-averageLayout(Graph_cond_0,Graph_cond_3, Graph_cond_7, Graph_cond_10, layout = "spring")
+lmat <- matrix(1:4, 2)
+lo <- layout(lmat, width = c(1, 1))
+
+set.seed(1)
+Graph_cond_0 = qgraph(cond0$pairwise$wadj, layout = L,
+            labels = colnames(issp_2019_anger),
+            groups = ggm_groups, color = ggm_colors, 
+            legend=F, title = "Anger = 0", title.cex = 6,
+            edge.color=cond0$pairwise$edgecolor_cb,
+            borders = T, vsize=10, esize = 15)
+
+set.seed(1)
+Graph_cond_3 = qgraph(cond3$pairwise$wadj, layout = L,
+            labels = colnames(issp_2019_anger),  
+            groups = ggm_groups, color = ggm_colors, 
+            legend=F, title = "Anger = 3", title.cex = 6,
+            edge.color=cond3$pairwise$edgecolor_cb,
+            borders = T, vsize=10, esize = 15)
+
+set.seed(1)
+Graph_cond_7 = qgraph(cond7$pairwise$wadj, layout = L,
+            labels = colnames(issp_2019_anger),  
+            groups = ggm_groups, color = ggm_colors, 
+            legend=F, title = "Anger = 7", title.cex = 6,
+            edge.color=cond7$pairwise$edgecolor_cb,
+            borders = T, vsize=10, esize = 15)
+
+set.seed(1)
+Graph_cond_10 = qgraph(cond10$pairwise$wadj, layout = L,
+            labels = colnames(issp_2019_anger),  
+            groups = ggm_groups, color = ggm_colors, 
+            legend=F, title = "Anger = 10", title.cex = 6,
+            edge.color=cond10$pairwise$edgecolor_cb,
+            borders = T, vsize=10, esize = 15)
+
+dev.off()
+```
+
+## CAN
+
+```{r}
+#fit
+CANFit <- IsingFit(issp_2019_can, gamma = 0.05)
+```
+
+```{r}
+#plot
+CANGraph<-qgraph(CANFit$weiadj, layout = averageLayout(GraphMGM),
+            labels = shortnames_22, nodeNames = longnames_22,  
+            groups = ggm_groups, color = ggm_colors, 
+            legend=F, theme = "Borkulo",
+            borders = T, vsize=7.0, esize = 15, 
+            filetype="jpg", filename=here("Output", "Fig_4.1"))
+```
+
+```{r}
+#centrality
+centrality_can_graph = centralityPlot(CANGraph, labels = longnames_22, 
+                                      orderBy = "Strength", 
+                                      scale = "z-scores") + 
+  geom_vline(xintercept=0, linetype="dotted") +
+  scale_x_continuous(limits = c(-2.5,2.8)) +
+  theme_nice() + 
+  theme(axis.text.y=element_text(hjust=1))
+
+ggsave(here("Output", "Fig_4.2.jpg"), centrality_can_graph,
+        height = 4)
+```
+
+```{r}
+#combined centrality tables
+centrality_combined = centralityPlot(list(GGM=GraphMGM,Ising=CANGraph), include = c("Strength"),
+               scale = "z-scores", orderBy = "Strength") + 
+  geom_vline(xintercept=0, linetype="dotted") +
+  scale_x_continuous(limits = c(-2,2.8)) +
+  theme_nice() + 
+  theme(axis.text.y=element_text(hjust=1))
+
+ggsave(here("Output", "Fig2_4.2_combined.jpg"), centrality_combined,
+        height = 4)
+```
+
+## Simulation centrality
+
+```{r}
+#Simulation input 
+SimInput <- LinTransform(CANFit$weiadj, CANFit$thresholds) #The LinTransform function rescales the edge weights and thresholds, so that a threshold of 0 indicates that a node has no disposition to be in a given state and a positive (negative) threshold indicates that a node has the disposition to be "on" ("off")
+
+#create objects
+shortnames_1 = shortnames_22[1]
+shortnames_2 = shortnames_22[2]
+shortnames_3 = shortnames_22[3]
+shortnames_4 = shortnames_22[4]
+shortnames_5 = shortnames_22[5]
+shortnames_6 = shortnames_22[6]
+shortnames_7 = shortnames_22[7]
+shortnames_8 = shortnames_22[8]
+shortnames_9 = shortnames_22[9]
+shortnames_10 = shortnames_22[10]
+shortnames_11 = shortnames_22[11]
+shortnames_12 = shortnames_22[12]
+shortnames_13 = shortnames_22[13]
+shortnames_14 = shortnames_22[14]
+shortnames_15 = shortnames_22[15]
+shortnames_16 = shortnames_22[16]
+shortnames_17 = shortnames_22[17]
+shortnames_18 = shortnames_22[18]
+shortnames_19 = shortnames_22[19]
+shortnames_20 = shortnames_22[20]
+shortnames_21 = shortnames_22[21]
+shortnames_22 = shortnames_22[22]
+```
+
+
+```{r}
+#samples with single nodes positive disposition
+set.seed(123)
+
+SampleNeg <- IsingSampler(3000, SimInput$graph, 
+                          rep(-.1,22),#this argument specifies the thresholds, which are all set to -.1 
+                          responses = c(-1L,1L))
+
+Sample_1 <- IsingSampler(3000, SimInput$graph, 
+                          c(rep(-.1,0),
+                            1,#this sets the thesholds of the first node to 1
+                            rep(-.1,21)),#this sets the threshold of the others node to -.1
+                            responses = c(-1L,1L))
+
+Sample_2 <- IsingSampler(3000, SimInput$graph, 
+                          c(rep(-.1,1),#this sets the threshold of the first node to -.1
+                            1,#this sets the thesholds of the second node to 1
+                            rep(-.1,20)),#this sets the threshold of the others node to -.1
+                            responses = c(-1L,1L))
+
+Sample_3 <- IsingSampler(3000, SimInput$graph, 
+                          c(rep(-.1,2),
+                            1,
+                            rep(-.1,19)),
+                            responses = c(-1L,1L))
+
+Sample_4 <- IsingSampler(3000, SimInput$graph, 
+                          c(rep(-.1,3),
+                            1,
+                            rep(-.1,18)),
+                            responses = c(-1L,1L))
+
+Sample_5 <- IsingSampler(3000, SimInput$graph, 
+                          c(rep(-.1,4),
+                            1,
+                            rep(-.1,17)),
+                            responses = c(-1L,1L))
+
+Sample_6 <- IsingSampler(3000, SimInput$graph, 
+                          c(rep(-.1,5),
+                            1,
+                            rep(-.1,16)),
+                            responses = c(-1L,1L))
+
+Sample_7 <- IsingSampler(3000, SimInput$graph, 
+                          c(rep(-.1,6),
+                            1,
+                            rep(-.1,15)),
+                            responses = c(-1L,1L))
+
+Sample_8 <- IsingSampler(3000, SimInput$graph, 
+                          c(rep(-.1,7),
+                            1,
+                            rep(-.1,14)),
+                            responses = c(-1L,1L))
+
+Sample_9 <- IsingSampler(3000, SimInput$graph, 
+                          c(rep(-.1,8),
+                            1,
+                            rep(-.1,13)),
+                            responses = c(-1L,1L))
+
+Sample_10 <- IsingSampler(3000, SimInput$graph, 
+                          c(rep(-.1,9),
+                            1,
+                            rep(-.1,12)),
+                            responses = c(-1L,1L))
+
+Sample_11 <- IsingSampler(3000, SimInput$graph, 
+                          c(rep(-.1,10),
+                            1,
+                            rep(-.1,11)),
+                            responses = c(-1L,1L))
+
+Sample_12 <- IsingSampler(3000, SimInput$graph, 
+                          c(rep(-.1,11),
+                            1,
+                            rep(-.1,10)),
+                            responses = c(-1L,1L))
+
+Sample_13 <- IsingSampler(3000, SimInput$graph, 
+                          c(rep(-.1,12),
+                            1,
+                            rep(-.1,9)),
+                            responses = c(-1L,1L))
+
+Sample_14 <- IsingSampler(3000, SimInput$graph, 
+                          c(rep(-.1,13),
+                            1,
+                            rep(-.1,8)),
+                            responses = c(-1L,1L))
+
+Sample_15 <- IsingSampler(3000, SimInput$graph, 
+                          c(rep(-.1,14),
+                            1,
+                            rep(-.1,7)),
+                            responses = c(-1L,1L))
+
+Sample_16 <- IsingSampler(3000, SimInput$graph, 
+                          c(rep(-.1,15),
+                            1,
+                            rep(-.1,6)),
+                            responses = c(-1L,1L))
+
+Sample_17 <- IsingSampler(3000, SimInput$graph, 
+                          c(rep(-.1,16),
+                            1,
+                            rep(-.1,5)),
+                            responses = c(-1L,1L))
+
+Sample_18 <- IsingSampler(3000, SimInput$graph, 
+                          c(rep(-.1,17),
+                            1,
+                            rep(-.1,4)),
+                            responses = c(-1L,1L))
+
+Sample_19 <- IsingSampler(3000, SimInput$graph, 
+                          c(rep(-.1,18),
+                            1,
+                            rep(-.1,3)),
+                            responses = c(-1L,1L))
+
+Sample_20 <- IsingSampler(3000, SimInput$graph, 
+                          c(rep(-.1,19),
+                            1,
+                            rep(-.1,2)),
+                            responses = c(-1L,1L))
+
+Sample_21 <- IsingSampler(3000, SimInput$graph, 
+                          c(rep(-.1,20),
+                            1,
+                            rep(-.1,1)),
+                            responses = c(-1L,1L))
+
+Sample_22 <- IsingSampler(3000, SimInput$graph, 
+                          c(rep(-.1,21),
+                            1,
+                            rep(-.1,0)),
+                            responses = c(-1L,1L))
+
+allsamples <- rbind(SampleNeg,
+                    Sample_1,
+                    Sample_2,
+                    Sample_3,
+                    Sample_4,
+                    Sample_5,
+                    Sample_6,
+                    Sample_7,
+                    Sample_8,
+                    Sample_9,
+                    Sample_10,
+                    Sample_11,
+                    Sample_12,
+                    Sample_13,
+                    Sample_14,
+                    Sample_15,
+                    Sample_16,
+                    Sample_17,
+                    Sample_18,
+                    Sample_19,
+                    Sample_20,
+                    Sample_21,
+                    Sample_22)
+
+rowname <- rep(c('Baseline',
+                 glue('Intervention on {shortnames_1}'),
+                 glue('Intervention on {shortnames_2}'),
+                 glue('Intervention on {shortnames_3}'),
+                 glue('Intervention on {shortnames_4}'),
+                 glue('Intervention on {shortnames_5}'),
+                 glue('Intervention on {shortnames_6}'),
+                 glue('Intervention on {shortnames_7}'),
+                 glue('Intervention on {shortnames_8}'), 
+                 glue('Intervention on {shortnames_9}'),
+                 glue('Intervention on {shortnames_10}'),
+                 glue('Intervention on {shortnames_11}'),
+                 glue('Intervention on {shortnames_12}'),
+                 glue('Intervention on {shortnames_13}'),
+                 glue('Intervention on {shortnames_14}'),
+                 glue('Intervention on {shortnames_15}'),
+                 glue('Intervention on {shortnames_16}'),
+                 glue('Intervention on {shortnames_17}'),
+                 glue('Intervention on {shortnames_18}'), 
+                 glue('Intervention on {shortnames_19}'),
+                 glue('Intervention on {shortnames_20}'),
+                 glue('Intervention on {shortnames_21}'),
+                 glue('Intervention on {shortnames_22}')), 
+               each=3000)
+
+row.names(allsamples) <- rowname
+```
+
+```{r}
+#calculate the sum scores of the different networks
+sumSampleall<-apply(allsamples, 1, sum)  
+sumscores<- data.frame(sumSampleall,rowname)
+head (sumscores)
+
+meansumscores<-aggregate(sumscores$sumSampleall, by=list(sumscores$rowname), mean)
+sdsumscores<-aggregate(sumscores$sumSampleall, by=list(sumscores$rowname), sd)
+
+graphicsumscores<- data.frame(meansumscores,sdsumscores)
+
+#calculate confidence intervals for sumscore means
+m<-graphicsumscores$x
+s<-graphicsumscores$x.1
+u<-m+1.96*s/sqrt(3000)
+l<-m-1.96*s/sqrt(3000)
+
+confi<- cbind(graphicsumscores, m, u, l)
+names<-confi$Group.1
+graph<-data.frame(confi,names)
+
+graph$names <- factor(graph$names, levels = graph$names[order(graph$m)])
+graph$names
+```
+
+```{r}
+#forestplot for the means of sumscores
+mean_SampleNeg = meansumscores %>% 
+  slice(1) %>% 
+  pull(x)
+
+upper_SampleNeg = u[1]
+
+credplot.gg <- function(graph){
+ require(ggplot2)
+ p <- ggplot(graph, aes(x=names, y=m, ymin=l, ymax=u))+
+ geom_pointrange()+
+ geom_hline(yintercept = upper_SampleNeg, linetype="dashed")+
+ geom_hline(yintercept = upper_SampleNeg+2, linetype="dotted")+
+   scale_y_continuous(limits = c(-6,-1)) +
+ coord_flip()+
+ xlab('')+
+   ylab('Change in mean sum scores')+
+   theme_nice()+
+      theme(axis.text.y=element_text(hjust=1))
+ return(p)
+}
+
+meansumscores_plot = credplot.gg(graph)
+
+ggsave(here("Output", "Fig_5.jpg"), meansumscores_plot, height = 4, width = 8)
+
+```
+
+## Robustness
+
+### old (bootnet)
+#### Edge accuracy
+
+```{r}
+#edge weight accuracy: non parametric bootstrap with 8 cores
+# edgeacc =  bootnet(ita_can, nBoots = 1000, nCores = 8, 'IsingFit')
+
+#load the object instead:
+edgeacc = readRDS(here("Input", "edgeacc.rds"))
+
+#plot 1
+dir.create(here("Output", "robustness"))
+pdf('../Output/robustness/edge_accuracy.pdf', height = 70, width = 50)
+plot(edgeacc, labels = shortnames, order = "sample")
+dev.off()
+
+#Plot 2
+pdf('../Output/robustness/edge_accuracy_CI.pdf', height = 70, width = 50)
+plot(edgeacc, plot = "interval", split0 = TRUE, order="sample", labels=shortnames)
+dev.off()
+
+#summary
+saummary_edgeacc = summary(edgeacc, statistics = c("edge"), 
+                            perNode = FALSE, rank = FALSE) 
+
+saummary_edgstr = summary(edgeacc, statistics = c("strength"), 
+                            perNode = FALSE, rank = FALSE) 
+```
+
+#### Centrality stability
+
+```{r}
+# case dropping bootstrap
+# centstab = bootnet(ita_can, nBoots = 1000, 'mgm', type = "case", nCores = 8)
+
+#load the object instead:
+centstab = readRDS(here("Input", "centstab.rds"))
+
+#plot 1
+pdf('../Output/robustness/Centrality_stability.pdf', height = 70, width = 50)
+plot(centstab, "Strength", perNode = TRUE, labels = shortnames,
+     subsetRange = c(100,50))
+dev.off()
+
+#Plot 2
+pdf('../Output/robustness/Centrality_stability_CI.pdf', height = 70, width = 50)
+plot(centstab, "Strength", CIstyle =  "quantiles")
+dev.off()
+
+#CS-coefficient (result should be above 0.25, better if above 0.5)
+corStability = corStability(centstab)
+```
+
+#### Testing Edge and centrality differences
+
+```{r}
+# Test: difference of weight ties 2-3 vs 4-5
+differenceTest(edgeacc, x = "p_inc_ineq", x2 = "b_red_pub", y = "p_inc_ineq", 
+                y2 = "j_ineq", "edge")
+
+# Plot test results for every edge weight in the network
+pdf('../Output/robustness/test_edges.pdf', height = 70, width = 50)
+plot(edgeacc, "edge", plot = "difference", onlyNonZero = TRUE, order = "sample", 
+     labels = T)
+dev.off()
+```
+
+```{r}
+# Test: difference of strength of node 5 [conspiracy] vs 20 [hesitancy] (if the bootstrapped CI include 0, they do not differ)
+test_conspiracy_vs_hesitancy = differenceTest(edgeacc, 6, 5, "strength")
+
+# Plot test results for every edge weight in the network
+pdf('../Output/robustness/test_strenghts.pdf', height = 70, width = 50)
+plot(edgeacc, "strength", order = "mean", labels = T)
+dev.off()
+```
+
+### Stability of moderations
+```{r}
+#Stability of moderations
+res_obj <- resample(object = mgm_mod, 
+                    data = issp_2019_anger, 
+                    nB = 10000,
+                    pbar = FALSE)
+
+#visualize result
+plotRes(res_obj, 
+        axis.ticks = c(-.1, 0, .1, .2, .3, .4, .5), 
+        axis.ticks.mod = c(-.1, -.05, 0, .05, .1), 
+        cex.label = 1, 
+        labels = colnames(issp_2019_anger), 
+        layout.width.labels = .40)
+```

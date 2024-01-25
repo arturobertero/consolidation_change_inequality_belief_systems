@@ -1,0 +1,7 @@
+"0","#plot"
+"0","CANGraph<-qgraph(CANFit$weiadj, layout = averageLayout(GraphMGM),"
+"0","            labels = shortnames_22, nodeNames = longnames_22,  "
+"0","            groups = ggm_groups, color = ggm_colors, "
+"0","            legend=F, theme = ""Borkulo"","
+"0","            borders = T, vsize=7.0, esize = 15, "
+"0","            filetype=""jpg"", filename=here(""Output"", ""Fig_4.1""))"

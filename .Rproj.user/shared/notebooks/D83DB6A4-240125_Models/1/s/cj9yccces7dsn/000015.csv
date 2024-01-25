@@ -1,0 +1,4 @@
+"0","#calculate the sum scores of the different networks"
+"0","sumSampleall<-apply(allsamples, 1, sum)  "
+"0","sumscores<- data.frame(sumSampleall,rowname)"
+"0","head (sumscores)"
