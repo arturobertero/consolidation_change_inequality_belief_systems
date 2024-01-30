@@ -1,0 +1,13 @@
+"0","#combined centrality tables
+centrality_combined = centralityPlot(list(GGM=GraphMGM,Ising=CANGraph), include = c(""Strength""),
+               scale = ""z-scores"", orderBy = ""Strength"") + 
+  geom_vline(xintercept=0, linetype=""dotted"") +
+  scale_x_continuous(limits = c(-2,2.8)) +
+  # theme_nice() + 
+  # guides(fill=guide_legend(title=""Type"")) +
+  # scale_color_discrete(name = ""Type"") +
+  theme(axis.text.y=element_text(hjust=1),
+        legend.position = ""bottom"")
+"
+"2","Note: z-scores are shown on x-axis rather than raw centrality indices.
+"
