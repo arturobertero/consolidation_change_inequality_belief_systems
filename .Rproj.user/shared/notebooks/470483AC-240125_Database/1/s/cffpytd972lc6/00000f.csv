@@ -1,3 +1,0 @@
-"0","#issp_2019_anger"
-"0","issp_2019_anger = issp_2019 %>% "
-"0","  select(ineq_p:anger)"

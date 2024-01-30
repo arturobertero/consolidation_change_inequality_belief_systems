@@ -1,3 +1,0 @@
-"0","#issp_2019_nodes"
-"0","issp_2019_nodes = issp_2019 %>% "
-"0","  select(ineq_p:merit)"

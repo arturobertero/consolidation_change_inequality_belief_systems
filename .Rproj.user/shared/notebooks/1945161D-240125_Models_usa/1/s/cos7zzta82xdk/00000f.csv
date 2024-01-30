@@ -1,0 +1,27 @@
+"0","(small_w = NetworkToolbox::smallworldness(mgm_issp_2019_nodes$pairwise$wadj, iter = 1000, 
+          progBar = FALSE, method = c(""HG"")))
+"
+"1","$swm
+"
+"1","[1]"
+"1"," 1.352273"
+"1","
+"
+"1","
+"
+"1","$rASPL
+"
+"1","[1]"
+"1"," 1.749342"
+"1","
+"
+"1","
+"
+"1","$lrCCt
+"
+"1","[1]"
+"1"," 0.3214412"
+"1","
+"
+"1","
+"

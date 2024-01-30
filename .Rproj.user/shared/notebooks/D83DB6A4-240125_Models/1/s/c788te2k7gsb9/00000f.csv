@@ -1,8 +1,0 @@
-"0","#edge weight accuracy: non parametric bootstrap with 8 cores"
-"0","# edgeacc =  bootnet(ita_can, nBoots = 1000, nCores = 8, 'IsingFit')"
-"0",""
-"0","#load the object instead:"
-"0","edgeacc = readRDS(here(""Input"", ""edgeacc.rds""))"
-"2","Warning: cannot open compressed file '/Users/art/Documents/Github/lavori in corso/papers/Bertero_Franetovic_netsci/Input/edgeacc.rds', probable reason 'No such file or directory'"
-"2","Error in gzfile(file, ""rb"") : cannot open the connection
-"
