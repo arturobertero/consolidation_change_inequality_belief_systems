@@ -204,7 +204,7 @@ summary_issp_2019_anger  = issp_2019_anger %>%
   skim() %>% 
   as.data.frame()
 
-stargazer(as.data.frame(issp_2019_anger), type = "text", nobs = TRUE)
+stargazer(as.data.frame(issp_2019_anger), type = "html", nobs = TRUE)
 ```
 
 ```{r}
@@ -213,7 +213,7 @@ summary_issp_2019_can  = issp_2019_can %>%
   skim() %>% 
   as.data.frame()
 
-stargazer(as.data.frame(issp_2019_can), type = "text", nobs = TRUE)
+stargazer(as.data.frame(issp_2019_can), type = "html", nobs = TRUE)
 ```
 # Output
 

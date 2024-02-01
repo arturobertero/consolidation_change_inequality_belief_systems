@@ -265,7 +265,8 @@ dev.off()
 
 ```{r}
 #fit
-CANFit <- IsingFit(issp_2019_can, gamma = 0.05)
+#CANFit <- IsingFit(issp_2019_can, gamma = 0.05)
+CANFit <- IsingFit(issp_2019_can, gamma = 0.25)
 ```
 
 ```{r}
@@ -301,7 +302,7 @@ centrality_combined = centralityPlot(list(GGM=GraphMGM,Ising=CANGraph), include 
   # theme_nice() + 
   theme(axis.text.y=element_text(hjust=1))
 
-ggsave(here("Output", "Fig2_4.2_combined.jpg"), centrality_combined,
+ggsave(here("Output", "Supplement", "Fig1.jpg"), centrality_combined,
         height = 4)
 ```
 
@@ -585,96 +586,208 @@ ggsave(here("Output", "Fig_5.jpg"), meansumscores_plot, height = 4, width = 8)
 
 ## Robustness
 
-### old (bootnet)
-#### Edge accuracy
+#### Edge accuracy ggm
 
 ```{r}
 #edge weight accuracy: non parametric bootstrap with 8 cores
-# edgeacc =  bootnet(ita_can, nBoots = 1000, nCores = 8, 'IsingFit')
+#edgeacc =  bootnet(issp_2019_nodes, nBoots = 10000, nCores = 8, 'EBICglasso')
 
 #load the object instead:
-edgeacc = readRDS(here("Input", "edgeacc.rds"))
+load(here("Input", "bootstrap", "ggm_boot.RData"))
 
-#plot 1
-dir.create(here("Output", "robustness"))
-pdf('../Output/robustness/edge_accuracy.pdf', height = 70, width = 50)
-plot(edgeacc, labels = shortnames, order = "sample")
-dev.off()
-
-#Plot 2
-pdf('../Output/robustness/edge_accuracy_CI.pdf', height = 70, width = 50)
-plot(edgeacc, plot = "interval", split0 = TRUE, order="sample", labels=shortnames)
-dev.off()
+#plot
+edgeacc_ggm = plot(edgeacc, labels = shortnames_22, order="sample")
+ggsave(here("Output", "Supplement", "Fig_2.jpg"), edgeacc_ggm, height = 22, width = 15)
 
 #summary
-saummary_edgeacc = summary(edgeacc, statistics = c("edge"), 
-                            perNode = FALSE, rank = FALSE) 
-
-saummary_edgstr = summary(edgeacc, statistics = c("strength"), 
-                            perNode = FALSE, rank = FALSE) 
+#saummary_edgeacc = summary(edgeacc, statistics = c("edge"), 
+#                            perNode = FALSE, rank = FALSE) 
+#
+#saummary_edgstr = summary(edgeacc, statistics = c("strength"), 
+#                            perNode = FALSE, rank = FALSE) 
 ```
 
-#### Centrality stability
+#### Centrality stability ggm
 
 ```{r}
 # case dropping bootstrap
-# centstab = bootnet(ita_can, nBoots = 1000, 'mgm', type = "case", nCores = 8)
+#centstab = bootnet(issp_2019_nodes, nBoots = 10000, 'EBICglasso', type = "case", nCores = 8)
 
-#load the object instead:
-centstab = readRDS(here("Input", "centstab.rds"))
-
-#plot 1
-pdf('../Output/robustness/Centrality_stability.pdf', height = 70, width = 50)
-plot(centstab, "Strength", perNode = TRUE, labels = shortnames,
-     subsetRange = c(100,50))
-dev.off()
-
-#Plot 2
-pdf('../Output/robustness/Centrality_stability_CI.pdf', height = 70, width = 50)
-plot(centstab, "Strength", CIstyle =  "quantiles")
-dev.off()
+#plot 
+centstab_ggm = plot(centstab, "Strength", labels = shortnames_22)
+ggsave(here("Output", "Supplement", "Fig_3.jpg"), centstab_ggm, height = 22, width = 15)
 
 #CS-coefficient (result should be above 0.25, better if above 0.5)
-corStability = corStability(centstab)
+corStability_ggm = corStability(centstab)
 ```
 
-#### Testing Edge and centrality differences
+#### Testing Edge and centrality differences (for Results section)
 
 ```{r}
-# Test: difference of weight ties 2-3 vs 4-5
-differenceTest(edgeacc, x = "p_inc_ineq", x2 = "b_red_pub", y = "p_inc_ineq", 
-                y2 = "j_ineq", "edge")
+## Test: difference of weight ties 2-3 vs 4-5
+#differenceTest(edgeacc, x = "p_inc_ineq", x2 = "b_red_pub", y = "p_inc_ineq", 
+#                y2 = "j_ineq", "edge")
 
-# Plot test results for every edge weight in the network
-pdf('../Output/robustness/test_edges.pdf', height = 70, width = 50)
-plot(edgeacc, "edge", plot = "difference", onlyNonZero = TRUE, order = "sample", 
-     labels = T)
-dev.off()
+## Plot test results for every edge weight in the network
+#pdf('../Output/robustness/test_edges.pdf', height = 70, width = 50)
+#plot(edgeacc, "edge", plot = "difference", onlyNonZero = TRUE, order = "sample", 
+#     labels = T)
+#dev.off()
 ```
 
 ```{r}
-# Test: difference of strength of node 5 [conspiracy] vs 20 [hesitancy] (if the bootstrapped CI include 0, they do not differ)
-test_conspiracy_vs_hesitancy = differenceTest(edgeacc, 6, 5, "strength")
-
-# Plot test results for every edge weight in the network
-pdf('../Output/robustness/test_strenghts.pdf', height = 70, width = 50)
-plot(edgeacc, "strength", order = "mean", labels = T)
-dev.off()
+## Test: difference of strength of node 5 [conspiracy] vs 20 [hesitancy] (if the bootstrapped CI include 0, they do not differ)
+#test_conspiracy_vs_hesitancy = differenceTest(edgeacc, 6, 5, "strength")
+#
+## Plot test results for every edge weight in the network
+#pdf('../Output/robustness/test_strenghts.pdf', height = 70, width = 50)
+#plot(edgeacc, "strength", order = "mean", labels = T)
+#dev.off()
 ```
 
-### Stability of moderations
+### Stability of moderations 
 ```{r}
 #Stability of moderations
-res_obj <- resample(object = mgm_mod, 
-                    data = issp_2019_anger, 
-                    nB = 10000,
-                    pbar = FALSE)
+#res_obj <- resample(object = mgm_mod, 
+#                    data = issp_2019_anger, 
+#                    nB = 500,
+#                    pbar = TRUE)
+
+#load object instead
+load(here("Input", "bootstrap", "mod_boot.RData"))
 
 #visualize result
-plotRes(res_obj, 
+#png(here("Output", "Supplement", "Fig_4.1.png"), width = 3000, height = 3000)  # uncomment and put table = F if you want figure rather than table
+tab_mod = data.frame(plotRes(res_obj, 
         axis.ticks = c(-.1, 0, .1, .2, .3, .4, .5), 
         axis.ticks.mod = c(-.1, -.05, 0, .05, .1), 
         cex.label = 1, 
+        decreasing = TRUE,
         labels = colnames(issp_2019_anger), 
-        layout.width.labels = .40)
+        layout.width.labels = 1,
+        table = TRUE))
+
+#build a df
+tab_mod_df = tab_mod %>%
+  select(Variable.A, Variable.B, Mod_Mean, Mod_qtl_low, Mod_qtl_high, Mod_propLtZ) %>% 
+  filter(Mod_propLtZ>0.80) %>% #filtering moderation effect detected in more than 80% of bootstrap samples
+  arrange(desc(Mod_Mean))
+
+# Create the names_tab_mod vector
+names_tab_mod <- colnames(issp_2019_anger)
+
+# Loop through the dataframe and replace numeric values with corresponding text
+tab_mod_df$Variable.A <- ifelse(tab_mod_df$Variable.A >= 1 
+                                   & tab_mod_df$Variable.A <= length(names_tab_mod),
+                                   names_tab_mod[tab_mod_df$Variable.A],
+                                   tab_mod_df$Variable.A)
+
+tab_mod_df$Variable.B <- ifelse(tab_mod_df$Variable.B >= 1 
+                                   & tab_mod_df$Variable.B <= length(names_tab_mod),
+                                   names_tab_mod[tab_mod_df$Variable.B],
+                                   tab_mod_df$Variable.B)
+
+write.csv(tab_mod_df, here("Output", "Supplement", "tab_mod_df.csv"), row.names = F)
+
+write.csv(Orange_summ, "Orange_summ.csv", row.names = F)
 ```
+
+#### Edge accuracy ising
+```{r}
+#edge weight accuracy: non parametric bootstrap with 8 cores
+#edgeacc_is =  bootnet(issp_2019_can, nBoots = 10000, nCores = 8, 'IsingFit')
+
+#load object instead
+load(here("Input", "bootstrap", "is_boot.RData"))
+
+#plot
+edgeacc_is_plot = plot(edgeacc_is, labels = shortnames_22, order="sample")
+ggsave(here("Output", "Supplement", "Fig_4.jpg"), edgeacc_is_plot, height = 22, width = 15)
+
+#summary
+#saummary_edgeacc_is = summary(edgeacc_is, statistics = c("edge"), 
+#                            perNode = FALSE, rank = FALSE) 
+#
+#saummary_edgstr_is = summary(edgeacc_is, statistics = c("strength"), 
+#                            perNode = FALSE, rank = FALSE) 
+```
+
+#### Centrality stability ising
+```{r}
+# case dropping bootstrap
+#centstab_is = bootnet(issp_2019_can, nBoots = 10000, 'EBICglasso', type = "case", nCores = 8)
+
+#plot 
+centstab_is_plot = plot(centstab, "Strength", labels = shortnames_22)
+ggsave(here("Output", "Supplement", "Fig_5.jpg"), centstab_is_plot, height = 22, width = 15)
+
+#CS-coefficient (result should be above 0.25, better if above 0.5)
+corStability_is = corStability(centstab_is)
+```
+
+### Alternative dummy recode for ising
+
+```{r}
+#issp_2019_can = issp_2019_nodes %>% #truncation at 3
+#  mutate(ineq_p= ifelse(ineq_p<=3,0,1),
+#         reg_p= ifelse(reg_p<=3,0,1),
+#         prog_b= ifelse(prog_b<=3,0,1),
+#         ineq_j= ifelse(ineq_j<=2,0,1),
+#         redis_d= ifelse(redis_d<=3,0,1),
+#         redis_f= ifelse(redis_f<=3,0,1),
+#         family= ifelse(family<=3,0,1),
+#         edupar= ifelse(edupar<=3,0,1),
+#         edu= ifelse(edu<=3,0,1),
+#         work= ifelse(work<=3,0,1),
+#         people= ifelse(people<=3,0,1),
+#         connec= ifelse(connec<=3,0,1),
+#         bribes= ifelse(bribes<=3,0,1),
+#         race= ifelse(race<=3,0,1),
+#         relig= ifelse(relig<=3,0,1),
+#         sex= ifelse(sex<=3,0,1),
+#         redis_p= ifelse(redis_p<=3,0,1),
+#         redis_m= ifelse(redis_m<=3,0,1),
+#         resp= ifelse(resp<=3,0,1),
+#         train= ifelse(train<=3,0,1),
+#         need= ifelse(need<=3,0,1),
+#         merit= ifelse(merit<=3,0,1))
+
+#issp_2019_can = issp_2019_nodes %>% #truncation at 2
+#  mutate(ineq_p= ifelse(ineq_p<=2,0,1),
+#         reg_p= ifelse(reg_p<=2,0,1),
+#         prog_b= ifelse(prog_b<=2,0,1),
+#         ineq_j= ifelse(ineq_j<=2,0,1),
+#         redis_d= ifelse(redis_d<=2,0,1),
+#         redis_f= ifelse(redis_f<=2,0,1),
+#         family= ifelse(family<=2,0,1),
+#         edupar= ifelse(edupar<=2,0,1),
+#         edu= ifelse(edu<=2,0,1),
+#         work= ifelse(work<=2,0,1),
+#         people= ifelse(people<=2,0,1),
+#         connec= ifelse(connec<=2,0,1),
+#         bribes= ifelse(bribes<=2,0,1),
+#         race= ifelse(race<=2,0,1),
+#         relig= ifelse(relig<=2,0,1),
+#         sex= ifelse(sex<=2,0,1),
+#         redis_p= ifelse(redis_p<=2,0,1),
+#         redis_m= ifelse(redis_m<=2,0,1),
+#         resp= ifelse(resp<=2,0,1),
+#         train= ifelse(train<=2,0,1),
+#         need= ifelse(need<=2,0,1),
+#         merit= ifelse(merit<=2,0,1))
+```
+
+
+# Output
+```{r}
+#Save heavy objects
+save(edgeacc, centstab,
+     file = here("Input", "bootstrap", "ggm_boot.RData"))
+
+save(res_obj,
+     file = here("Input", "bootstrap", "mod_boot.RData"))
+
+save(edgeacc_is, centstab_is,
+     file = here("Input", "bootstrap", "is_boot.RData"))
+```
+
