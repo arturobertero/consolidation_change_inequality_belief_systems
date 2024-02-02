@@ -15,7 +15,7 @@ knitr::opts_chunk$set(echo = TRUE)
 #Libraries
 library(pacman)
 p_load(tidyverse, janitor, here, haven, labelled, sjmisc, skimr,
-       stargazer, purr, conflicted, devtools)
+       stargazer, purr, conflicted, devtools, naniar, ggplot)
 ```
 
 ```{r}
@@ -39,7 +39,7 @@ issp_2019_original = read_dta(here("Input", "issp_social_inequality_2019", "ZA76
 
 # Processing
 
-## Database ita
+## Database usa
 
 ```{r}
 #Select
@@ -100,10 +100,6 @@ issp_2019 = issp_2019 %>%
          anger,
          everything())
 
-```
-
-
-```{r}
 #Missing values and inverting polarity
 issp_2019 = issp_2019 %>% 
   mutate(across(ineq_p:anger, ~replace(., .<0 , NA)),
@@ -111,33 +107,51 @@ issp_2019 = issp_2019 %>%
          across(c(ineq_p, redis_p, redis_m, redis_d, prog_b),  ~ 6 - .),
          across(resp:merit,  ~ 6 - .))
 
-#Reorder and na.omit
+#Select
 issp_2019 = issp_2019 %>% 
-  select(ineq_p,
-         reg_p,
-         prog_b,
-         ineq_j,
-         redis_d,
-         redis_f,
-         family,
-         edupar,
-         edu,
-         work,
-         people,
-         connec,
-         bribes,
-         race,
-         relig,
-         sex,
-         redis_p,
-         redis_m,
-         resp,
-         train,
-         need,
-         merit,
-         anger,
-         everything())%>% 
-  na.omit()
+  select(ineq_p:anger)
+
+#full dataset for t-tests
+issp_2019_full = issp_2019
+```
+
+```{r}
+#vis miss 
+missings = vis_miss(issp_2019)
+ggsave(here("Output", "Supplement", "Fig_6.jpg"), missings, width = 15, height = 15)
+
+```
+
+
+```{r}
+#list-wise deletion
+issp_2019 = na.omit(issp_2019) 
+```
+
+```{r}
+#T-tests
+t_test_result <- data.frame(
+  Variable = character(0),
+  Mean_First_Sample = numeric(0),
+  Mean_Second_Sample = numeric(0),
+  P_Value = numeric(0)
+)
+
+# Loop through the columns of the dataframes to do t-tests
+for (col_name in colnames(issp_2019)) {
+  t_test_result_temp <- t.test(issp_2019[[col_name]], issp_2019_full[[col_name]])
+  
+  t_test_result <- rbind(
+    t_test_result,
+    data.frame(
+      Variable = col_name,
+      Mean_First_Sample = mean(issp_2019[[col_name]]),
+      Mean_Second_Sample = mean(issp_2019_full[[col_name]], na.rm = TRUE),
+      P_Value = t_test_result_temp$p.value)) }
+
+#export df
+t_test_result[, sapply(t_test_result, is.numeric)] = round(t_test_result[, sapply(t_test_result, is.numeric)], 3)
+write.csv(t_test_result, here("Output", "Supplement", "t_test_result.csv"), row.names = F)
 ```
 
 
