@@ -711,7 +711,7 @@ summary_edgeacc_order <- saummary_edgeacc %>%
   arrange(mean)
 
 summary_edgeacc_order <- saummary_edgeacc %>%
-  filter(node1 == "edupar" & node2 == "race")
+  filter(node1 == "work" | node2 == "work")
 ```
 
 #### Centrality stability ggm
