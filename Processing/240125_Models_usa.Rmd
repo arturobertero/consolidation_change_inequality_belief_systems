@@ -267,7 +267,7 @@ Graph_cond_10 = qgraph(cond10$pairwise$wadj)
 
 #multiplot
 jpeg(here("Output", "Fig_3.jpg"), 
-    height = 3000, width = 4000, quality = 1000)
+    height = 12000, width = 12000, quality = 1000)
 
 L<-averageLayout(Graph_cond_0, Graph_cond_3, Graph_cond_7, Graph_cond_10, layout = "spring")
 lmat <- matrix(1:4, 2)
@@ -277,7 +277,7 @@ set.seed(1)
 Graph_cond_0 = qgraph(cond0$pairwise$wadj, layout = L,
             labels = colnames(issp_2019_anger),
             groups = ggm_groups, color = ggm_colors, 
-            legend=F, title = "Anger = 0", title.cex = 6,
+            legend=F, title = "Anger = 0", title.cex = 12,
             edge.color=cond0$pairwise$edgecolor_cb,
             borders = T, vsize=10, esize = 15)
 
@@ -285,7 +285,7 @@ set.seed(1)
 Graph_cond_7 = qgraph(cond7$pairwise$wadj, layout = L,
             labels = colnames(issp_2019_anger),  
             groups = ggm_groups, color = ggm_colors, 
-            legend=F, title = "Anger = 7", title.cex = 6,
+            legend=F, title = "Anger = 7", title.cex = 12,
             edge.color=cond7$pairwise$edgecolor_cb,
             borders = T, vsize=10, esize = 15)
 
@@ -293,7 +293,7 @@ set.seed(1)
 Graph_cond_3 = qgraph(cond3$pairwise$wadj, layout = L,
             labels = colnames(issp_2019_anger),  
             groups = ggm_groups, color = ggm_colors, 
-            legend=F, title = "Anger = 3", title.cex = 6,
+            legend=F, title = "Anger = 3", title.cex = 12,
             edge.color=cond3$pairwise$edgecolor_cb,
             borders = T, vsize=10, esize = 15)
 
@@ -301,7 +301,7 @@ set.seed(1)
 Graph_cond_10 = qgraph(cond10$pairwise$wadj, layout = L,
             labels = colnames(issp_2019_anger),  
             groups = ggm_groups, color = ggm_colors, 
-            legend=F, title = "Anger = 10", title.cex = 6,
+            legend=F, title = "Anger = 10", title.cex = 12,
             edge.color=cond10$pairwise$edgecolor_cb,
             borders = T, vsize=10, esize = 15)
 
@@ -367,8 +367,8 @@ CANFit <- IsingFit(issp_2019_can, gamma = 0.25)
 CANGraph<-qgraph(CANFit$weiadj, layout = averageLayout(GraphMGM),
             labels = shortnames_22, nodeNames = longnames_22,  
             groups = ggm_groups, color = ggm_colors, 
-            legend=F, theme = "Borkulo",
-            borders = T, vsize=7.0, esize = 15, 
+            legend=T,  legend.cex = 0.30, theme = "Borkulo",
+            borders = T, vsize=7.0, esize = 15, GLratio = 2,
             filetype="jpg", filename=here("Output", "Fig_4.1"))
 ```
 
@@ -389,7 +389,7 @@ centrality_can_graph = centralityPlot(CANGraph, labels = longnames_22,
   theme(axis.text.y=element_text(hjust=1))
 
 ggsave(here("Output", "Fig_4.2.jpg"), centrality_can_graph,
-        height = 4)
+        height = 4, width = 11)
 ```
 
 ```{r}
