@@ -370,17 +370,11 @@ ggm_groups10 = list(
 
 
 ```{r}
-
-Graph_cond_0_wadj = cond0$pairwise$wadj[1:22,1:22]
-Graph_cond_3_wadj = cond3$pairwise$wadj[1:22,1:22]
-Graph_cond_7_wadj = cond7$pairwise$wadj[1:22,1:22]
-Graph_cond_10_wadj = cond10$pairwise$wadj[1:22,1:22]
-
 #plot with 3 levels and fixed layout
-Graph_cond_0 = qgraph(Graph_cond_0_wadj)
-Graph_cond_3 = qgraph(Graph_cond_3_wadj)
-Graph_cond_7 = qgraph(Graph_cond_7_wadj)
-Graph_cond_10 = qgraph(Graph_cond_10_wadj)
+Graph_cond_0 = qgraph(cond0$pairwise$wadj)
+Graph_cond_3 = qgraph(cond3$pairwise$wadj)
+Graph_cond_7 = qgraph(cond7$pairwise$wadj)
+Graph_cond_10 = qgraph(cond10$pairwise$wadj)
 
 #multiplot
 jpeg(here("Output", "Fig_3.jpg"), 
@@ -391,40 +385,117 @@ lmat <- matrix(1:4, 2)
 lo <- layout(lmat, width = c(1, 1))
 
 set.seed(1)
-Graph_cond_0 = qgraph(Graph_cond_0, layout = L,
-            labels = shortnames_22,
+Graph_cond_0 = qgraph(cond0$pairwise$wadj, layout = L,
+            labels = colnames(issp_2019_anger),
             groups = ggm_groups0, color = ggm_colors, 
-            legend=F, title = "Anger = 0", title.cex = 12,
+            legend=F, title = "Anger = 0", title.cex = 20,
+            edge.color=cond0$pairwise$edgecolor_cb,
+            borders = T, vsize=10, esize = 15)
+
+set.seed(1)
+Graph_cond_7 = qgraph(cond7$pairwise$wadj, layout = L,
+            labels = colnames(issp_2019_anger),  
+            groups = ggm_groups7, color = ggm_colors, 
+            legend=F, title = "Anger = 7", title.cex = 20,
+            edge.color=cond7$pairwise$edgecolor_cb,
+            borders = T, vsize=10, esize = 15)
+
+set.seed(1)
+Graph_cond_3 = qgraph(cond3$pairwise$wadj, layout = L,
+            labels = colnames(issp_2019_anger),  
+            groups = ggm_groups3, color = ggm_colors, 
+            legend=F, title = "Anger = 3", title.cex = 20,
+            edge.color=cond3$pairwise$edgecolor_cb,
+            borders = T, vsize=10, esize = 15)
+
+set.seed(1)
+Graph_cond_10 = qgraph(cond10$pairwise$wadj, layout = L,
+            labels = colnames(issp_2019_anger),  
+            groups = ggm_groups10, color = ggm_colors, 
+            legend=F, title = "Anger = 10", title.cex = 20,
+            edge.color=cond10$pairwise$edgecolor_cb,
+            borders = T, vsize=10, esize = 15)
+
+dev.off()
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+
+#plot with 3 levels and fixed layout
+Graph_cond_0 = qgraph(cond0$pairwise$wadj)
+Graph_cond_3 = qgraph(cond3$pairwise$wadj)
+Graph_cond_7 = qgraph(cond7$pairwise$wadj)
+Graph_cond_10 = qgraph(cond10$pairwise$wadj)
+
+#multiplot
+jpeg(here("Output", "Fig_3.jpg"), 
+    height = 12000, width = 12000, quality = 1000)
+
+L<-averageLayout(Graph_cond_0, Graph_cond_3, Graph_cond_7, Graph_cond_10, layout = "spring")
+lmat <- matrix(1:4, 2)
+lo <- layout(lmat, width = c(1, 1))
+
+set.seed(1)
+Graph_cond_0 = qgraph(Graph_cond_0, layout = "spring",
+            labels = shortnames_23,
+            groups = ggm_groups0, color = ggm_colors, 
+            legend=F, title = "Anger = 0", title.cex = 20,
+            label.scale = F, label.cex = 20,
             edge.color=cond0$pairwise$edgecolor_cb,
             borders =  F,vsize=10, esize = 15,
             label.scale = F, label.cex = 20
 )
 
+
 set.seed(1)
-Graph_cond_7 = qgraph(Graph_cond_7, layout = L,
-            labels = shortnames_22,  
+Graph_cond_7 = qgraph(Graph_cond_7, layout = "spring",
+            labels = shortnames_23,  
             groups = ggm_groups7, color = ggm_colors, 
-            legend=F, title = "Anger = 7", title.cex = 12,
+            legend=F, title = "Anger = 7", title.cex = 20,
+            label.scale = F, label.cex = 20,
             edge.color=cond7$pairwise$edgecolor_cb,
             borders =  F,vsize=10, esize = 15,
             label.scale = F, label.cex = 20
 )
 
 set.seed(1)
-Graph_cond_3 = qgraph(Graph_cond_3, layout = L,
-            labels = shortnames_22,  
+Graph_cond_3 = qgraph(Graph_cond_3, layout = "spring",
+            labels = shortnames_23,  
             groups = ggm_groups3, color = ggm_colors, 
-            legend=F, title = "Anger = 3", title.cex = 12,
+            legend=F, title = "Anger = 3", title.cex = 20,
+            label.scale = F, label.cex = 20,
             edge.color=cond3$pairwise$edgecolor_cb,
-            borders =  F,vsize=10, esize = 15,
+            borders =  T,vsize=10, esize = 15,
             label.scale = F, label.cex = 20
 )
 
 set.seed(1)
-Graph_cond_10 = qgraph(Graph_cond_10, layout = L,
-            labels = shortnames_22,  
+Graph_cond_10 = qgraph(Graph_cond_10, layout = "spring",
+            labels = shortnames_23,  
             groups = ggm_groups10, color = ggm_colors, 
-            legend=F, title = "Anger = 10", title.cex = 12,
+            legend=F, title = "Anger = 10", title.cex = 20,
+            label.scale = F, label.cex = 20,
             edge.color=cond10$pairwise$edgecolor_cb,
             borders =  F,vsize=10, esize = 15,
             label.scale = F, label.cex = 20
