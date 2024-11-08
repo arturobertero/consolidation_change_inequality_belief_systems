@@ -1,0 +1,240 @@
+---
+title: "Database"
+author: "Arturo Bertero"
+date: "2024-01-25"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Input
+
+```{r}
+#Libraries
+library(pacman)
+p_load(tidyverse, janitor, here, haven, labelled, sjmisc, skimr,
+       stargazer, purr, conflicted, devtools, naniar, ggplot)
+```
+
+```{r}
+#Packages conflicts
+conflict_prefer("select", "dplyr")
+conflict_prefer("filter", "dplyr")
+conflict_prefer("lag", "dplyr")
+
+options(max.print=999999)
+options(scipen=999)
+```
+
+## ISSP Social Inequality 2019
+
+```{r}
+#Load database
+issp_2019_original = read_dta(here("Input", "issp_social_inequality_2019", "ZA7600_v3-0-0.dta"))  %>% 
+  clean_names()
+
+```
+
+# Processing
+
+## Database usa
+
+```{r}
+#Select
+issp_2019 = issp_2019_original %>% 
+  filter(country==840) %>% 
+  select(v1:v50)
+
+#Rename
+issp_2019 = issp_2019 %>% 
+  rename(e_weafam = v1,
+         e_edupar = v2,
+         e_edu = v3,
+         e_work = v4,
+         e_people = v5,
+         e_connec = v6,
+         e_bribes = v7,
+         e_race = v8,
+         e_relig = v9,
+         e_sex = v10,
+         p_income = v21,
+         j_income = v50,
+         b_public = v22,
+         b_market = v24,
+         j_distrust = v26,
+         j_failure = v27,
+         b_tax = v28, 
+         p_tax = v29, #Girare
+         b_resp = v44,
+         b_train = v45,
+         b_need = v46,
+         b_merit = v47, 
+         anger = v32)
+
+#Reorder
+issp_2019 = issp_2019 %>% 
+  select(p_income,
+         p_tax,
+         b_tax,
+         j_income,
+         j_distrust,
+         j_failure,
+         e_weafam,
+         e_edupar,
+         e_edu,
+         e_work,
+         e_people,
+         e_connec,
+         e_bribes,
+         e_race,
+         e_relig,
+         e_sex,
+         b_public,
+         b_market,
+         b_resp,
+         b_train,
+         b_need,
+         b_merit,
+         anger,
+         everything())
+
+#Missing values and inverting polarity
+issp_2019 = issp_2019 %>% 
+  mutate(across(p_income:anger, ~replace(., .<0 , NA)),
+         across(e_weafam:e_sex,  ~ 6 - .),
+         across(c(p_income, b_public, b_market, j_distrust, b_tax),  ~ 6 - .),
+         across(b_resp:b_merit,  ~ 6 - .))
+
+#Select
+issp_2019 = issp_2019 %>% 
+  select(p_income:anger)
+
+#full dataset for t-tests
+issp_2019_full = issp_2019
+```
+
+```{r}
+#vis miss 
+missings = vis_miss(issp_2019)
+ggsave(here("Output", "Supplement", "Fig_6.jpg"), missings, width = 15, height = 15)
+
+```
+
+
+```{r}
+#list-wise deletion
+issp_2019 = na.omit(issp_2019) 
+```
+
+```{r}
+#T-tests
+t_test_result <- data.frame(
+  Variable = character(0),
+  Mean_First_Sample = numeric(0),
+  Mean_Second_Sample = numeric(0),
+  P_Value = numeric(0)
+)
+
+# Loop through the columns of the dataframes to do t-tests
+for (col_name in colnames(issp_2019)) {
+  t_test_result_temp <- t.test(issp_2019[[col_name]], issp_2019_full[[col_name]])
+  
+  t_test_result <- rbind(
+    t_test_result,
+    data.frame(
+      Variable = col_name,
+      Mean_First_Sample = mean(issp_2019[[col_name]]),
+      Mean_Second_Sample = mean(issp_2019_full[[col_name]], na.rm = TRUE),
+      P_Value = t_test_result_temp$p.value)) }
+
+#export df
+t_test_result[, sapply(t_test_result, is.numeric)] = round(t_test_result[, sapply(t_test_result, is.numeric)], 3)
+write.csv(t_test_result, here("Output", "Supplement", "t_test_result.csv"), row.names = F)
+```
+
+
+## Dataframes
+
+```{r}
+#issp_2019_nodes
+issp_2019_nodes = issp_2019 %>% 
+  select(p_income:b_merit)
+```
+
+```{r}
+#issp_2019_anger
+issp_2019_anger = issp_2019 %>% 
+  select(p_income:anger)
+```
+
+```{r}
+#issp_2019_can
+
+#map(issp_2019_nodes, frq)
+
+issp_2019_can = issp_2019_nodes %>% #truncation at means
+  mutate(p_income= ifelse(p_income<=4,0,1),
+         p_tax= ifelse(p_tax<=3,0,1),
+         b_tax= ifelse(b_tax<=4,0,1),
+         j_income= ifelse(j_income<=2,0,1),
+         j_distrust= ifelse(j_distrust<=4,0,1),
+         j_failure= ifelse(j_failure<=3,0,1),
+         e_weafam= ifelse(e_weafam<=2,0,1),
+         e_edupar= ifelse(e_edupar<=3,0,1),
+         e_edu= ifelse(e_edu<=4,0,1),
+         e_work= ifelse(e_work<=4,0,1),
+         e_people= ifelse(e_people<=3,0,1),
+         e_connec= ifelse(e_connec<=2,0,1),
+         e_bribes= ifelse(e_bribes<=1,0,1),
+         e_race= ifelse(e_race<=2,0,1),
+         e_relig= ifelse(e_relig<=1,0,1),
+         e_sex= ifelse(e_sex<=2,0,1),
+         b_public= ifelse(b_public<=3,0,1),
+         b_market= ifelse(b_market<=3,0,1),
+         b_resp= ifelse(b_resp<=4,0,1),
+         b_train= ifelse(b_train<=3,0,1),
+         b_need= ifelse(b_need<=2,0,1),
+         b_merit= ifelse(b_merit<=4,0,1))
+
+```
+
+
+## Summary
+
+```{r}
+#issp_2019_nodes
+summary_issp_2019_nodes  = issp_2019_nodes %>% 
+  skim() %>% 
+  as.data.frame()
+
+stargazer(as.data.frame(issp_2019_nodes), type = "text", nobs = TRUE)
+```
+
+```{r}
+#issp_2019_anger
+summary_issp_2019_anger  = issp_2019_anger %>% 
+  skim() %>% 
+  as.data.frame()
+
+stargazer(as.data.frame(issp_2019_anger), type = "latex", nobs = TRUE)
+```
+
+```{r}
+#issp_2019_can
+summary_issp_2019_can  = issp_2019_can %>% 
+  skim() %>% 
+  as.data.frame()
+
+stargazer(as.data.frame(issp_2019_can), type = "latex", nobs = TRUE)
+```
+# Output
+
+```{r}
+
+#Save objects
+save(issp_2019_nodes, issp_2019_anger, issp_2019_can,
+     file = here("Input", "usa_data.RData"))
+
+```
