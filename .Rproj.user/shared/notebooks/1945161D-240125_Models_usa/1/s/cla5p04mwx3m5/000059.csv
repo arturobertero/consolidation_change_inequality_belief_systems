@@ -1,4 +1,0 @@
-"0",""
-"0","#multiplot"
-"0","jpeg(here(""Output"", ""Fig_3.jpg""), "
-"0","    height = 3000, width = 4000, quality = 1000)"

@@ -1,4 +1,0 @@
-"0","#access scale of anger (every variable is mean-centered and sd=1)"
-"0","tb <- table(scale(issp_2019_anger[,23]))"
-"0","names(tb) <- round(as.numeric(names(tb)), 2)"
-"0","barplot(tb, axes=FALSE, xlab="""", ylim=c(0, 250))"

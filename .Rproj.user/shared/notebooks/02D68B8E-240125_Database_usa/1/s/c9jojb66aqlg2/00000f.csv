@@ -1,4 +1,0 @@
-"0","#Load database"
-"0","issp_2019_original = read_dta(here(""Input"", ""issp_social_inequality_2019"", ""ZA7600_v3-0-0.dta""))  %>% "
-"0","  clean_names()"
-"0",""

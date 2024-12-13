@@ -390,45 +390,45 @@ lmat <- matrix(1:4, 2)
 lo <- layout(lmat, width = c(1, 1))
 
 set.seed(1)
-Graph_cond_0 = qgraph(Graph_cond_0, layout = "spring",
+Graph_cond_0 = qgraph(Graph_cond_0, layout = L,
             labels = shortnames_23,
             groups = ggm_groups0, color = ggm_colors, 
             legend=F, title = "Anger = 0", title.cex = 20,
-            label.scale = T,
+            label.scale = F, label.cex = 11,
             edge.color=edge_col0,
-            borders =  T, esize = 20, vsize = 13
+            borders =  T, esize = 20, vsize = 10
 )
 
 
 set.seed(1)
-Graph_cond_7 = qgraph(Graph_cond_7, layout = "spring",
+Graph_cond_7 = qgraph(Graph_cond_7, layout = L,
             labels = shortnames_23,
             groups = ggm_groups7, color = ggm_colors, 
             legend=F, title = "Anger = 7", title.cex = 20,
-            label.scale = T,
+            label.scale = F, label.cex = 11,
             edge.color=edge_col7,
-            borders =  T, esize = 20, vsize = 13
+            borders =  T, esize = 20, vsize = 10
 )
 
 
 set.seed(1)
-Graph_cond_3 = qgraph(Graph_cond_3, layout = "spring",
+Graph_cond_3 = qgraph(Graph_cond_3, layout = L,
             labels = shortnames_23,  
             groups = ggm_groups3, color = ggm_colors, 
             legend=F, title = "Anger = 3", title.cex = 20,
-            label.scale = T,
+            label.scale = F, label.cex = 11,
             edge.color=edge_col3,
-            borders =  T, esize = 20, vsize=13
+            borders =  T, esize = 20, vsize = 10
 )
 
 set.seed(1)
-Graph_cond_10 = qgraph(Graph_cond_10, layout = "spring",
+Graph_cond_10 = qgraph(Graph_cond_10, layout = L,
             labels = shortnames_23,  
             groups = ggm_groups10, color = ggm_colors, 
             legend=F, title = "Anger = 10", title.cex = 20,
-            label.scale = T, 
+            label.scale = F, label.cex = 11,
             edge.color=edge_col10,
-            borders =  T, esize = 20, vsize=13
+            borders =  T, esize = 20, vsize = 10
 )
 
 dev.off()
@@ -492,6 +492,7 @@ CANFit <- IsingFit(issp_2019_can, gamma = 0.25)
 CANGraph<-qgraph(CANFit$weiadj, layout = averageLayout(GraphMGM),
             labels = shortnames_22, nodeNames = longnames_22,  
             groups = ggm_groups, color = ggm_colors, 
+            label.scale = F, label.cex = 0.7,
             legend=T,  legend.cex = 0.30, theme = "Borkulo",
             borders = T, vsize=7.0, esize = 15, GLratio = 2,
             filetype="jpg", filename=here("Output", "Fig_4.1"))
